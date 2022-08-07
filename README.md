@@ -1,1 +1,60 @@
-# foodassess
+## Part1- SQL
+
+# Query 1
+
+select  city, 
+        max(`amount_per_city_cuisine`*`break_bool`)/max(`count_per_city_cuisine`*`break_bool`) as `breakfast_basket`,
+        max(`amount_per_city`)/max(`count_per_city`) as `efood_basket`,
+        max(`count_per_city_cuisine`*`break_bool`)/max(`unique_per_city_cuisine`*`break_bool`) as `breakfast_freq`,        
+        max(`count_per_city`)/max(`unique_per_city`) as `efood_freq`,
+        count(distinct(case when (`freq_bool`=1 and`break_bool`=1) then user_id end))/max(`unique_per_city`) as `breakfast_users3freq_perc`,
+        count(distinct(case when `freq_bool` =1 then user_id end))/max(`unique_per_city`) as `efood_users3freq_perc`,
+        max(`count_per_city`) as `count_per_city`
+from(
+    select  city as `city`,
+            cuisine as `cuisine`,
+            case when cuisine ='Breakfast' then 1 else 0 end as `break_bool`,
+            user_id as `user_id`,
+            sum(amount) over (partition by city) as `amount_per_city`,
+            count(*) over (partition by city) as `count_per_city`,
+            count(distinct(user_id)) over (partition by city) as `unique_per_city`,
+            sum(amount) over (partition by city,cuisine) as `amount_per_city_cuisine`,
+            count(*) over (partition by city,cuisine) as `count_per_city_cuisine`,
+            count(distinct(user_id)) over (partition by city,cuisine) as `unique_per_city_cuisine`,
+            count(*) over(partition by city,user_id) as `Users_freq`,
+            case when count(*) over(partition by city,user_id)>3 then 1 else 0 end as `freq_bool`
+    FROM `efood2022-358610.main_assessment.orders`
+)
+where `count_per_city`>1000
+group by city
+order by `count_per_city` desc
+limit 5
+
+# Query 2
+
+select  `city` as `city`,
+        sum(`orders_per_user`) as `oders_top`,
+        max(`total_orders`) as `total_orders`,
+        sum(`orders_per_user`)/max(`total_orders`) as `prcentage_of_orders_top10`
+from(
+    select  city as `city`,
+            user_id as `user_id`,
+            sum(orders_per_user) over (partition by city) as `total_orders`,
+            `amount_per_user` as `amount_per_user`,
+            `orders_per_user` as `orders_per_user`,
+            row_number() over (
+              partition by city
+              order by amount_per_user desc
+              ) as `top_users`
+    FROM (
+      select  city as `city`, 
+              user_id as `user_id`,
+              count(*) as `orders_per_user`,
+              sum(amount) as `amount_per_user`
+      FROM `efood2022-358610.main_assessment.orders`
+      group by city, user_id
+      order by 1, 4 desc
+    )
+)
+where top_users<=10
+group by city
