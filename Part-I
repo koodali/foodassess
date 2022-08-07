@@ -36,7 +36,7 @@ limit 5
 # Query 2
 
 select  `city` as `city`,
-        sum(`orders_per_user`) as `oders_top`,
+        sum(`orders_per_user`) as `orders_top`,
         max(`total_orders`) as `total_orders`,
         sum(`orders_per_user`)/max(`total_orders`) as `prcentage_of_orders_top10`
 from(
