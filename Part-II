@@ -1,6 +1,5 @@
 ## Part II: Analyze Users
 
-# import nessesary packages
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -27,7 +26,6 @@ def breakfast_bool(breakfasts):
         return 'No'
 data['breakfast_bool'] = data['breakfasts'].apply(breakfast_bool)  # Yes for at least one breakfast, No otherwise
 
-
 # Plot the data - Univariate Analysis
 ## Data to use for the segmation
 sns.jointplot(x='avg_amount',y='freq',data=data,kind='scatter',xlim=(0, 100), ylim=(0, 100))
@@ -45,17 +43,19 @@ for k in K:
 
 plt.plot(K, Sum_of_squared_distances, 'bx-')
 plt.xlabel('k')
-plt.ylabel('Sum_of_squared_distances')
-plt.title('Elbow Method For Optimal k') 
+plt.ylabel('Sum of Squared Distances_distances')
+plt.title('Elbow Method for k-centers') 
 
-# Apply Kmeans clustering with 3 centers
+# Apply Kmeans clustering with k=3 centers
 kmeans = KMeans(n_clusters=3)
 kmeans.fit(data[['freq','avg_amount']])
 kmeans.cluster_centers_
 data['Cluster']=kmeans.labels_
 
+
 # Plot clusters
-sns.scatterplot(x="avg_amount", y="freq", hue="Cluster",data=data)
+sns.scatterplot(x="avg_amount", y="freq", hue="Cluster",data=data).set(title='Cluster distribution')
+
 
 # Calculate the contribution of each cluster on total amount and number of orders
 clusters= data.groupby('Cluster').sum()[['freq','total_amount','breakfasts']]
@@ -63,6 +63,12 @@ clusters['freq_contrib']=clusters['freq']/data[['freq','total_amount','breakfast
 clusters['amnt_contrib']=clusters['total_amount']/data[['freq','total_amount','breakfasts']].sum(axis = 0)['total_amount']
 clusters['breakf_contrib']=clusters['breakfasts']/data[['freq','total_amount','breakfasts']].sum(axis = 0)['breakfasts']
 clusters['avg']=clusters['total_amount']/clusters['freq']
+
+clusters['center_freq']=kmeans.cluster_centers_[:,0]
+clusters['center_avg_amount']=kmeans.cluster_centers_[:,1]
+clusters['num_users'] =data.groupby('Cluster').count()['freq']
+clusters.index=[1,2,3]
+
 
 # Plot contributions
 # On total Amount
