@@ -61,3 +61,4 @@ from(
 )
 where top_users<=10
 group by city
+order by 3 desc
