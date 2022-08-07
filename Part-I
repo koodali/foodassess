@@ -9,7 +9,8 @@ select  city,
         max(`count_per_city`)/max(`unique_per_city`) as `efood_freq`,
         count(distinct(case when (`freq_bool`=1 and`break_bool`=1) then user_id end))/max(`unique_per_city`) as `breakfast_users3freq_perc`,
         count(distinct(case when `freq_bool` =1 then user_id end))/max(`unique_per_city`) as `efood_users3freq_perc`,
-        max(`count_per_city`) as `count_per_city`
+        max(`count_per_city`) as `count_per_city`,
+        max(`break_per_city`) as `break_per_city`
 from(
     select  city as `city`,
             cuisine as `cuisine`,
@@ -17,17 +18,19 @@ from(
             user_id as `user_id`,
             sum(amount) over (partition by city) as `amount_per_city`,
             count(*) over (partition by city) as `count_per_city`,
+            count(*) over (partition by city,cuisine) as `cuisine_per_city`,
             count(distinct(user_id)) over (partition by city) as `unique_per_city`,
             sum(amount) over (partition by city,cuisine) as `amount_per_city_cuisine`,
             count(*) over (partition by city,cuisine) as `count_per_city_cuisine`,
             count(distinct(user_id)) over (partition by city,cuisine) as `unique_per_city_cuisine`,
             count(*) over(partition by city,user_id) as `Users_freq`,
-            case when count(*) over(partition by city,user_id)>3 then 1 else 0 end as `freq_bool`
+            case when count(*) over(partition by city,user_id)>3 then 1 else 0 end as `freq_bool`,
+            (case when cuisine ='Breakfast' then 1 else 0 end )* count(*) over (partition by city,cuisine) as `break_per_city`
     FROM `efood2022-358610.main_assessment.orders`
 )
 where `count_per_city`>1000
 group by city
-order by `count_per_city` desc
+order by `break_per_city` desc
 limit 5
 
 # Query 2
