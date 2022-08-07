@@ -1,0 +1,76 @@
+## Part II: Analyze Users
+
+# import nessesary packages
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+
+# Import data
+orders = pd.read_csv (r'C:\Users\Magdalini\Desktop\efood\orders.csv',sep = ',') 
+
+#Create dummy variable for breakfast
+orders['breq_bool']= orders['cuisine']=='Breakfast'
+
+# Calculate frequency, order value per user, number of breakfasts orders and Breakfast dummy
+data = pd.DataFrame()
+data['freq']=orders.groupby('user_id').count()['order_id'] #frequency
+data['total_amount']=orders.groupby('user_id').sum()['amount'] #total amount per user
+data['avg_amount']=orders.groupby('user_id').mean()['amount'] #order value per user
+data['breakfasts']=orders.groupby('user_id').sum()['breq_bool'] #number of breakfasts orders 
+
+def breakfast_bool(breakfasts):
+    if breakfasts>0:
+        return 'Yes'
+    else:
+        return 'No'
+data['breakfast_bool'] = data['breakfasts'].apply(breakfast_bool)  # Yes for at least one breakfast, No otherwise
+
+
+# Plot the data - Univariate Analysis
+## Data to use for the segmation
+sns.jointplot(x='avg_amount',y='freq',data=data,kind='scatter',xlim=(0, 100), ylim=(0, 100))
+
+## Check which customers made at least on breakfast order on Jan22
+sns.scatterplot(x="avg_amount", y="freq", hue="breakfast_bool",data=data)
+
+# Use the Elbow method to help decide the number of clusters for the segmantation
+Sum_of_squared_distances = []
+K = range(1,10)
+for k in K:
+    km = KMeans(n_clusters=k)
+    km = km.fit(data[['freq','avg_amount']])
+    Sum_of_squared_distances.append(km.inertia_)
+
+plt.plot(K, Sum_of_squared_distances, 'bx-')
+plt.xlabel('k')
+plt.ylabel('Sum_of_squared_distances')
+plt.title('Elbow Method For Optimal k') 
+
+# Apply Kmeans clustering with 3 centers
+kmeans = KMeans(n_clusters=3)
+kmeans.fit(data[['freq','avg_amount']])
+kmeans.cluster_centers_
+data['Cluster']=kmeans.labels_
+
+# Plot clusters
+sns.scatterplot(x="avg_amount", y="freq", hue="Cluster",data=data)
+
+# Calculate the contribution of each cluster on total amount and number of orders
+clusters= data.groupby('Cluster').sum()[['freq','total_amount','breakfasts']]
+clusters['freq_contrib']=clusters['freq']/data[['freq','total_amount','breakfasts']].sum(axis = 0)['freq']
+clusters['amnt_contrib']=clusters['total_amount']/data[['freq','total_amount','breakfasts']].sum(axis = 0)['total_amount']
+clusters['breakf_contrib']=clusters['breakfasts']/data[['freq','total_amount','breakfasts']].sum(axis = 0)['breakfasts']
+clusters['avg']=clusters['total_amount']/clusters['freq']
+
+# Plot contributions
+# On total Amount
+plt.pie(clusters['amnt_contrib'], labels = clusters.index,autopct='%1.2f%%',startangle=90,explode= (0, 0, 0.1))
+plt.title("Contribution on Total Amount")
+# On total number of orders
+plt.pie(clusters['freq_contrib'], labels = clusters.index,autopct='%1.2f%%',startangle=90,explode= (0, 0, 0.1))
+plt.title("Contribution on Number of orders")
+# On breakfasts
+plt.pie(clusters['breakf_contrib'], labels = clusters.index,autopct='%1.2f%%',startangle=90,explode= (0, 0, 0.1))
+plt.title("Contribution on Breakfasts")
