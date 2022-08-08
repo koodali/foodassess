@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
 # Import data
-orders = pd.read_csv (r'C:\Users\Magdalini\Desktop\efood\orders.csv',sep = ',') 
+orders = pd.read_csv (r'C:\Users\koodali\Desktop\orders.csv',sep = ',') 
 
 #Create dummy variable for breakfast
 orders['breq_bool']= orders['cuisine']=='Breakfast'
